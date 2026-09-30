@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1b2d">
+  <title>João Pedro · Currículo</title>
+  <meta name="description" content="Currículo online de João Pedro Carneiro Santana.">
+  <link rel="icon" href="/foto.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/vendor/purify.min.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <b id="barName">Currículo</b>
+    <button id="adminPill" class="pill" hidden>🔓 Modo admin · Sair</button>
+  </header>
+ 
+  <main class="wrap">
+    <section id="hero" class="card hero"></section>
+ 
+    <!-- Caixa de postagem: só aparece no modo admin -->
+    <section id="composer" class="card comp" hidden>
+      <div class="comp-row">
+        <img class="mini" id="compAvatar" alt="">
+        <div class="ed-wrap">
+          <div id="editor" class="editor" contenteditable="true" data-ph="Escreva algo..."></div>
+          <div id="compAtt" class="att-list"></div>
+        </div>
+      </div>
+      <div class="tools">
+        <div class="fmt" id="fmtBar">
+          <button data-cmd="styles" title="Estilos">Aa</button>
+          <button data-cmd="bold" title="Negrito"><b>B</b></button>
+          <button data-cmd="italic" title="Itálico"><i>I</i></button>
+          <button data-cmd="underline" title="Sublinhado"><u>U</u></button>
+          <button data-cmd="strikeThrough" title="Riscado"><s>S</s></button>
+          <button data-cmd="insertUnorderedList" title="Lista">☰</button>
+          <button data-cmd="insertOrderedList" title="Lista numerada">1.</button>
+          <button data-cmd="checklist" title="Checklist">☑︎</button>
+        </div>
+        <div class="fmt styles" id="stylesBar" hidden>
+          <button data-block="h2">Título</button>
+          <button data-block="h3">Subtítulo</button>
+          <button data-block="p">Corpo</button>
+          <button data-cmd="removeFormat">Limpar</button>
+        </div>
+        <div class="att">
+          <label class="soft">🖼 Imagem<input type="file" id="pickImg" accept="image/*" multiple hidden></label>
+          <label class="soft">📎 Arquivo<input type="file" id="pickFile" multiple hidden></label>
+          <button class="soft" id="cancelEdit" hidden>Cancelar</button>
+          <button class="primary" id="publish">Publicar</button>
+        </div>
+      </div>
+    </section>
+ 
+    <nav class="seg" id="tabs">
+      <button data-tab="feed">Feed</button>
+      <button data-tab="cv">Currículo</button>
+      <button data-tab="certs">Certificados</button>
+      <button data-tab="contact">Contato</button>
+    </nav>
+ 
+    <section id="view"></section>
+  </main>
+ 
+  <div id="toast" class="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>
