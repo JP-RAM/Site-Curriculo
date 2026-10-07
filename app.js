@@ -33,6 +33,11 @@ async function load() {
     // Sem as funções (ex.: abrindo o arquivo direto no computador): mostra os dados iniciais só para leitura.
     data = await (await fetch("/data.json")).json();
   }
+  // Os dados salvos no servidor podem ser anteriores à seção de projetos: usa os do data.json como ponto de partida.
+  if (!Array.isArray(data.projects)) {
+    try { data.projects = (await (await fetch("/data.json")).json()).projects || []; }
+    catch { data.projects = []; }
+  }
 }
 
 async function save(msg = "Salvo") {
@@ -153,6 +158,49 @@ function skillList() {
   return section("Competências", "skill", `<div class="card chips">${body}</div>`, !xs.length);
 }
 
+function projCard(x) {
+  const hl = String(x.highlights || "").split("\n").map(s => s.trim()).filter(Boolean);
+  const stack = String(x.stack || "").split(",").map(s => s.trim()).filter(Boolean);
+  const demo = safeUrl(x.demo), repo = safeUrl(x.repo);
+  return `<article class="card proj">
+    ${x.image?.url ? `<a class="proj-shot" href="${esc(x.image.url)}" target="_blank" rel="noopener"><img src="${esc(x.image.url)}" alt="Tela do ${esc(x.name)}" loading="lazy"></a>` : ""}
+    <div class="proj-body">
+      <div class="proj-head"><b>${esc(x.name)}</b>${x.status ? `<span class="badge">${esc(x.status)}</span>` : ""}</div>
+      ${x.summary ? `<p class="proj-sum">${esc(x.summary)}</p>` : ""}
+      ${hl.length ? `<ul class="proj-hl">${hl.map(h => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}
+      ${stack.length ? `<div class="proj-stack">${stack.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>` : ""}
+      ${demo || repo || admin ? `<div class="links">
+        ${demo ? `<a class="lk demo" href="${esc(demo)}" target="_blank" rel="noopener">🔗 Ver projeto</a>` : ""}
+        ${repo ? `<a class="lk gh" href="${esc(repo)}" target="_blank" rel="noopener">${ICON.github}Código no GitHub</a>` : ""}
+        ${admin ? `<button class="soft" data-act="proj" data-id="${esc(x.id)}">✏️ Editar projeto</button>` : ""}
+      </div>` : ""}
+    </div>
+  </article>`;
+}
+
+function projList() {
+  const xs = data.projects || [];
+  const body = xs.length ? `<div class="stack">${xs.map(projCard).join("")}</div>` : `<div class="card empty">Nenhum projeto ainda.</div>`;
+  return section("Projetos", "proj", body, !xs.length);
+}
+
+// Aba Experiências: cada experiência aberta, com a descrição à mostra.
+function expTimeline() {
+  const xs = data.experiences;
+  const body = xs.length
+    ? `<div class="stack">${xs.map((x, i) => `<article class="card exp">
+        <div class="ic" style="background:${COLORS[i % COLORS.length]}">${EXP_ICONS[i % EXP_ICONS.length]}</div>
+        <div class="exp-main">
+          <b>${esc(x.role)}</b>
+          <small>${esc([x.company, range(x.start, x.end)].filter(Boolean).join(" · "))}</small>
+          ${x.description ? `<p>${esc(x.description)}</p>` : ""}
+        </div>
+        ${admin ? `<button class="soft" data-act="exp" data-id="${esc(x.id)}">Editar</button>` : ""}
+      </article>`).join("")}</div>`
+    : `<div class="card empty">Nenhuma experiência ainda.</div>`;
+  return `<div style="max-width:760px">${section("Experiência profissional", "exp", body, false)}</div>`;
+}
+
 function fileCard(f) {
   const ext = (f.name.split(".").pop() || "arq").slice(0, 4);
   const kb = f.size ? (f.size > 1048576 ? (f.size / 1048576).toFixed(1) + " MB" : Math.round(f.size / 1024) + " KB") : "";
@@ -215,9 +263,10 @@ function contactList() {
 
 function renderView() {
   const v = $("#view");
-  if (tab === "feed") v.innerHTML = `<div class="cols"><div class="stack"><div>${postList()}</div>${expList()}</div><div class="stack">${eduList()}${skillList()}</div></div>`;
+  if (tab === "feed") v.innerHTML = `<div class="cols"><div class="stack">${projList()}<div>${postList()}</div></div><div class="stack">${eduList()}${skillList()}</div></div>`;
   if (tab === "cv") v.innerHTML = `<div class="cols"><div class="stack">${data.profile.about || admin ? `<div><div class="sech"><span>Sobre</span>${admin ? `<button data-act="edit-profile">Editar</button>` : ""}</div><div class="card about">${esc(data.profile.about || "Escreva um resumo em Editar perfil.")}</div></div>` : ""}${expList()}</div><div class="stack">${eduList()}${skillList()}</div></div>`;
   if (tab === "certs") v.innerHTML = certGrid();
+  if (tab === "exp") v.innerHTML = expTimeline();
   if (tab === "contact") v.innerHTML = contactList();
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
 }
@@ -366,6 +415,16 @@ const EDU_FIELDS = [
   { key: "start", label: "Início", type: "date" },
   { key: "end", label: "Fim", type: "date", ongoing: true },
   { key: "note", label: "Descrição (aparece quando não há data de fim)", type: "textarea", onlyIfEmpty: "end", ph: "Ex.: Previsão de conclusão em 2027" },
+];
+const PROJ_FIELDS = [
+  { key: "name", label: "Nome do projeto", required: true, ph: "Ex.: Gestão Financeira" },
+  { key: "status", label: "Situação", ph: "Ex.: Em desenvolvimento, Concluído" },
+  { key: "summary", label: "O que o projeto resolve", type: "textarea", ph: "Uma ou duas frases" },
+  { key: "highlights", label: "O que você construiu (um por linha)", type: "textarea", ph: "Ex.: Cadastro de transações com categorias" },
+  { key: "stack", label: "Tecnologias (separe com vírgula)", ph: "Ex.: HTML, CSS, JavaScript, Node.js" },
+  { key: "demo", label: "Link do projeto no ar", type: "url" },
+  { key: "repo", label: "Link do código no GitHub", type: "url" },
+  { key: "image", label: "Print do projeto", type: "file", accept: "image/*" },
 ];
 const CERT_FIELDS = [
   { key: "name", label: "Nome do curso", required: true },
@@ -601,6 +660,19 @@ async function pdf() {
 
   if (txt(p.about)) { heading("Resumo profissional"); write(p.about, { after: 2 }); }
 
+  if (data.projects?.length) {
+    heading("Projetos");
+    for (const x of data.projects) {
+      need(14);
+      write([x.name, x.status && `(${x.status})`].filter(Boolean).join(" "), { size: 11, style: "bold", after: 0.5 });
+      if (x.stack) write(x.stack, { size: 9.5, color: GRAY, after: 0.8 });
+      write(x.summary, { after: 0.8 });
+      for (const h of String(x.highlights || "").split("\n").filter(l => l.trim())) write("- " + h.trim(), { after: 0.3 });
+      write([x.demo && "Projeto: " + x.demo.replace(/^https?:\/\//, ""), x.repo && "Código: " + x.repo.replace(/^https?:\/\//, "")].filter(Boolean).join("   "), { size: 9.5, color: [10, 102, 194], after: 3 });
+      y += 1;
+    }
+  }
+
   if (data.experiences.length) {
     heading("Experiência profissional");
     for (const e of data.experiences) {
@@ -658,6 +730,8 @@ document.addEventListener("click", async e => {
   if (act === "add-exp") return listEditor("experiences", EXP_FIELDS, "experiência");
   if (act === "add-edu") return listEditor("education", EDU_FIELDS, "formação");
   if (act === "add-cert") return listEditor("certificates", CERT_FIELDS, "certificado");
+  if (act === "add-proj") return listEditor("projects", PROJ_FIELDS, "projeto");
+  if (act === "proj") return listEditor("projects", PROJ_FIELDS, "projeto", id);
   if (act === "add-skill") return addSkill();
   if (act === "del-skill") { const i = +a.dataset.i; if (confirm(`Remover "${data.skills[i]}"?`)) { data.skills.splice(i, 1); await save("Removido"); } return; }
   if (act === "edit-post") return editPost(id);

@@ -95,7 +95,7 @@ svg { display: block; }
 .rich ul.check li.done { color: var(--mut); }
 
 /* Abas */
-.seg { display: flex; background: rgba(255,255,255,.07); border-radius: 11px; padding: 3px; margin: 22px 0 18px; max-width: 520px; }
+.seg { display: flex; background: rgba(255,255,255,.07); border-radius: 11px; padding: 3px; margin: 22px 0 18px; max-width: 620px; }
 .seg button { flex: 1; font-size: 13px; font-weight: 600; padding: 7px 0; border-radius: 9px; color: var(--mut); }
 .seg button.on { background: rgba(255,255,255,.14); color: var(--txt); box-shadow: 0 2px 8px rgba(0,0,0,.25); }
 
@@ -118,6 +118,29 @@ button.it:hover, a.it:hover { background: rgba(255,255,255,.03); }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 7px 12px; border-radius: 999px; background: rgba(91,157,255,.12); color: #cfe0ff; border: 1px solid rgba(91,157,255,.2); }
 .chip button { color: var(--mut); font-size: 15px; line-height: 1; }
 .about { padding: 18px; font-size: 15px; line-height: 1.6; white-space: pre-line; }
+
+/* Projetos */
+.proj { overflow: hidden; }
+.proj-shot { display: block; border-bottom: 1px solid var(--line); background: rgba(0,0,0,.2); }
+.proj-shot img { width: 100%; max-height: 300px; object-fit: cover; object-position: top; display: block; }
+.proj-body { padding: 18px; }
+.proj-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.proj-head b { font-size: 18px; font-weight: 700; letter-spacing: -.2px; }
+.badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(246,173,85,.14); color: #f6c26b; border: 1px solid rgba(246,173,85,.25); }
+.proj-sum { margin-top: 8px; font-size: 15px; line-height: 1.55; color: #c9d5e6; }
+.proj-hl { margin: 12px 0 0 20px; font-size: 14px; line-height: 1.7; }
+.proj-hl li::marker { color: var(--acc); }
+.proj-stack { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.proj-stack .chip { font-size: 12px; padding: 5px 10px; }
+.proj .links { margin-top: 16px; }
+.lk.demo { background: var(--acc); }
+
+/* Aba Experiências */
+.exp { display: flex; gap: 14px; align-items: flex-start; padding: 18px; }
+.exp-main { flex: 1; min-width: 0; }
+.exp-main b { font-size: 16px; font-weight: 600; display: block; }
+.exp-main small { font-size: 13px; color: var(--mut); display: block; margin-top: 2px; }
+.exp-main p { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #c9d5e6; white-space: pre-line; }
 
 /* Posts */
 .post { padding: 18px; }
@@ -201,6 +224,7 @@ button.it:hover, a.it:hover { background: rgba(255,255,255,.03); }
   .links { justify-content: center; }
   .cols { grid-template-columns: 1fr; }
   .certs { grid-template-columns: 1fr 1fr; }
+  .seg button { font-size: 12px; padding: 7px 2px; }
   .cert { padding: 14px; } .cert b { font-size: 15px; }
   .sheet-bg { align-items: flex-end; padding: 0; }
   .sheet { max-width: none; border-radius: 16px 16px 0 0; max-height: 92vh; }

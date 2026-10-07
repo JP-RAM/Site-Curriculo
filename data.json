@@ -11,27 +11,162 @@
     "github": "https://github.com/JP-RAM"
   },
   "experiences": [
-    { "id": "exp1", "role": "Auxiliar Administrativo/Financeiro", "company": "Atacadão do Queijo", "start": "set 2024", "end": "set 2025", "description": "Emissão e recebimento de notas fiscais, fechamento de caixa, controle de boletos e resolução de problemas no sistema financeiro.\nResultados: atendimento mais ágil e melhor controle de valores." },
-    { "id": "exp2", "role": "Educador Social", "company": "Instituto Inclusão de Desenvolvimento e Promoção Social", "start": "set 2024", "end": "set 2025", "description": "Apoio à reabilitação educacional e social de pessoas acolhidas, organização da rotina e manutenção da ordem no local." },
-    { "id": "exp3", "role": "Atendente e Operador de Bordado", "company": "Boina Preta", "start": "set 2019", "end": "set 2023", "description": "Atendimento ao cliente, operação de caixa, bordado em peças e manutenção da loja e dos equipamentos.\nResultados: melhoria nas avaliações de atendimento e padronização da equipe." },
-    { "id": "exp4", "role": "Administrativo", "company": "DreamLar Utilidades Domésticas", "start": "", "end": "", "description": "Captação de fornecedores, administração de compras e vendas online, controle financeiro e marketing.\nResultados: aumento de vendas, expansão de campanhas e giro de capital." }
+    {
+      "id": "exp1",
+      "role": "Auxiliar Administrativo/Financeiro",
+      "company": "Atacadão do Queijo",
+      "start": "set 2024",
+      "end": "set 2025",
+      "description": "Emissão e recebimento de notas fiscais, fechamento de caixa, controle de boletos e resolução de problemas no sistema financeiro.\nResultados: atendimento mais ágil e melhor controle de valores."
+    },
+    {
+      "id": "exp2",
+      "role": "Educador Social",
+      "company": "Instituto Inclusão de Desenvolvimento e Promoção Social",
+      "start": "set 2024",
+      "end": "set 2025",
+      "description": "Apoio à reabilitação educacional e social de pessoas acolhidas, organização da rotina e manutenção da ordem no local."
+    },
+    {
+      "id": "exp3",
+      "role": "Atendente e Operador de Bordado",
+      "company": "Boina Preta",
+      "start": "set 2019",
+      "end": "set 2023",
+      "description": "Atendimento ao cliente, operação de caixa, bordado em peças e manutenção da loja e dos equipamentos.\nResultados: melhoria nas avaliações de atendimento e padronização da equipe."
+    },
+    {
+      "id": "exp4",
+      "role": "Administrativo",
+      "company": "DreamLar Utilidades Domésticas",
+      "start": "",
+      "end": "",
+      "description": "Captação de fornecedores, administração de compras e vendas online, controle financeiro e marketing.\nResultados: aumento de vendas, expansão de campanhas e giro de capital."
+    }
   ],
   "education": [
-    { "id": "edu1", "course": "DevOps", "institution": "Anhanguera", "degree": "Graduação", "start": "2026", "end": "cursando" },
-    { "id": "edu2", "course": "Análise e Desenvolvimento de Sistemas", "institution": "IESB", "degree": "Tecnólogo", "start": "", "end": "dez 2024" }
+    {
+      "id": "edu1",
+      "course": "DevOps",
+      "institution": "Anhanguera",
+      "degree": "Graduação",
+      "start": "2026",
+      "end": "cursando"
+    },
+    {
+      "id": "edu2",
+      "course": "Análise e Desenvolvimento de Sistemas",
+      "institution": "IESB",
+      "degree": "Tecnólogo",
+      "start": "",
+      "end": "dez 2024"
+    }
   ],
-  "skills": ["HTML5", "CSS", "JavaScript", "Node.js", "Pacote Office (intermediário)", "IAs corporativas e pessoais", "Organização do tempo", "Sistemas ERP", "Atendimento ao cliente"],
+  "skills": [
+    "HTML5",
+    "CSS",
+    "JavaScript",
+    "Node.js",
+    "Pacote Office (intermediário)",
+    "IAs corporativas e pessoais",
+    "Organização do tempo",
+    "Sistemas ERP",
+    "Atendimento ao cliente"
+  ],
+  "projects": [
+    {
+      "id": "proj1",
+      "name": "Gestão Financeira",
+      "status": "Em desenvolvimento",
+      "summary": "Aplicação web responsiva, para celular e computador, que ajuda a controlar e acompanhar as finanças pessoais. A ideia é disponibilizar a ferramenta ao público no futuro.",
+      "highlights": "Registro de entradas e saídas\nAcompanhamento do saldo e dos gastos\nLayout responsivo para celular e desktop",
+      "stack": "HTML5, CSS, JavaScript, Node.js",
+      "demo": "",
+      "repo": "",
+      "image": null
+    }
+  ],
   "certificates": [
-    { "id": "c1", "name": "MySQL DBA", "issuer": "Udemy", "hours": "123,5h", "date": "", "file": null },
-    { "id": "c2", "name": "Banco de Dados Administrativo", "issuer": "Portal IDEA", "hours": "120h", "date": "", "file": null },
-    { "id": "c3", "name": "SQL Server DBA", "issuer": "Udemy", "hours": "84h", "date": "", "file": null },
-    { "id": "c4", "name": "Front-End", "issuer": "Danki Code", "hours": "81h", "date": "", "file": null },
-    { "id": "c5", "name": "MySQL: Banco de Dados", "issuer": "WR Educacional", "hours": "60h", "date": "", "file": null },
-    { "id": "c6", "name": "Cientista de Dados", "issuer": "Udemy", "hours": "46,5h", "date": "", "file": null },
-    { "id": "c7", "name": "Excel, Análise de Dados e Big Data", "issuer": "Udemy", "hours": "12,5h", "date": "", "file": null },
-    { "id": "c8", "name": "Infraestrutura Web", "issuer": "Danki Code", "hours": "12h", "date": "", "file": null },
-    { "id": "c9", "name": "Desenvolvimento Web", "issuer": "Danki Code", "hours": "9h", "date": "", "file": null },
-    { "id": "c10", "name": "SQL para Análise de Dados", "issuer": "Udemy", "hours": "6h", "date": "", "file": null }
+    {
+      "id": "c1",
+      "name": "MySQL DBA",
+      "issuer": "Udemy",
+      "hours": "123,5h",
+      "date": "",
+      "file": null
+    },
+    {
+      "id": "c2",
+      "name": "Banco de Dados Administrativo",
+      "issuer": "Portal IDEA",
+      "hours": "120h",
+      "date": "",
+      "file": null
+    },
+    {
+      "id": "c3",
+      "name": "SQL Server DBA",
+      "issuer": "Udemy",
+      "hours": "84h",
+      "date": "",
+      "file": null
+    },
+    {
+      "id": "c4",
+      "name": "Front-End",
+      "issuer": "Danki Code",
+      "hours": "81h",
+      "date": "",
+      "file": null
+    },
+    {
+      "id": "c5",
+      "name": "MySQL: Banco de Dados",
+      "issuer": "WR Educacional",
+      "hours": "60h",
+      "date": "",
+      "file": null
+    },
+    {
+      "id": "c6",
+      "name": "Cientista de Dados",
+      "issuer": "Udemy",
+      "hours": "46,5h",
+      "date": "",
+      "file": null
+    },
+    {
+      "id": "c7",
+      "name": "Excel, Análise de Dados e Big Data",
+      "issuer": "Udemy",
+      "hours": "12,5h",
+      "date": "",
+      "file": null
+    },
+    {
+      "id": "c8",
+      "name": "Infraestrutura Web",
+      "issuer": "Danki Code",
+      "hours": "12h",
+      "date": "",
+      "file": null
+    },
+    {
+      "id": "c9",
+      "name": "Desenvolvimento Web",
+      "issuer": "Danki Code",
+      "hours": "9h",
+      "date": "",
+      "file": null
+    },
+    {
+      "id": "c10",
+      "name": "SQL para Análise de Dados",
+      "issuer": "Udemy",
+      "hours": "6h",
+      "date": "",
+      "file": null
+    }
   ],
   "posts": []
 }
