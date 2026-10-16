@@ -1,14 +1,15 @@
 {
   "profile": {
     "name": "João Pedro Carneiro Santana",
-    "title": "Tecnólogo em Análise e Desenvolvimento de Sistemas",
+    "title": "Desenvolvedor júnior, com base em web e banco de dados",
     "city": "Brasília, DF",
     "email": "joaocarneiro.pro@gmail.com",
     "details": "Disponível para início imediato, presencial ou remoto\nInglês básico/intermediário\nCNH categoria B",
     "about": "Tecnólogo em Análise e Desenvolvimento de Sistemas (IESB), atualmente cursando DevOps pela Anhanguera. Tenho conhecimentos em desenvolvimento web (HTML, CSS e JavaScript) e venho aprofundando meus estudos em banco de dados e SQL.\n\nTrago experiência nas áreas administrativa e financeira, com atuação em compras, controle financeiro, emissão de notas fiscais em sistemas ERP e atendimento ao cliente, o que me proporciona visão de negócio, organização e foco em resultados.\n\nBusco oportunidades em Tecnologia da Informação, com disponibilidade imediata para atuação presencial ou remota.",
-    "photo": "/foto.png",
     "linkedin": "https://www.linkedin.com/in/joaopedrocarneiro1",
-    "github": "https://github.com/JP-RAM"
+    "github": "https://github.com/JP-RAM",
+    "instagram": "https://www.instagram.com/airlua",
+    "qualities": "Dados com cuidado | Quase 400 horas de cursos em SQL, MySQL e SQL Server.\nVisão de negócio | Rotina real de faturamento, caixa e boletos em ERP.\nEntrego do início ao fim | Algibeiro e este portfólio foram feitos por mim, do layout ao deploy."
   },
   "experiences": [
     {
@@ -67,13 +68,28 @@
     "CSS",
     "JavaScript",
     "Node.js",
+    "Git e GitHub",
+    "SQL",
+    "MySQL",
+    "SQL Server",
     "Pacote Office (intermediário)",
-    "IAs corporativas e pessoais",
-    "Organização do tempo",
     "Sistemas ERP",
+    "Ferramentas de IA",
+    "Organização do tempo",
     "Atendimento ao cliente"
   ],
   "projects": [
+    {
+      "id": "proj-algibeiro",
+      "name": "Algibeiro",
+      "status": "No ar",
+      "summary": "Site para guardar dinheiro, publicado com domínio próprio.",
+      "highlights": "",
+      "stack": "",
+      "demo": "https://www.algibeiro.com.br/",
+      "repo": "",
+      "image": null
+    },
     {
       "id": "proj1",
       "name": "Gestão Financeira",

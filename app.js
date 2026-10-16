@@ -5,18 +5,22 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
 const safeUrl = u => (/^(https?:|mailto:|\/)/i.test(u || "") ? u : u ? "https://" + u : "");
+// A caixa de postagem é movida para dentro da seção Novidades a cada render, então guardamos a referência.
+const composerEl = document.getElementById("composer");
 
 const ICON = {
   linkedin: '<svg viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>',
   github: '<svg viewBox="0 0 24 24"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>',
+  instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  dot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/></svg>',
 };
-const COLORS = ["#2b6cb0", "#2f855a", "#b7791f", "#805ad5", "#c05621", "#2c7a7b"];
-const EXP_ICONS = ["💼", "🤝", "🛍", "📦", "🧾", "🏢"];
 
 let data = null;
 let admin = false;
 let pass = "";
-let tab = "feed";
 
 // ---------- Servidor ----------
 async function api(path, opts = {}) {
@@ -33,11 +37,14 @@ async function load() {
     // Sem as funções (ex.: abrindo o arquivo direto no computador): mostra os dados iniciais só para leitura.
     data = await (await fetch("/data.json")).json();
   }
-  // Os dados salvos no servidor podem ser anteriores à seção de projetos: usa os do data.json como ponto de partida.
-  if (!Array.isArray(data.projects)) {
-    try { data.projects = (await (await fetch("/data.json")).json()).projects || []; }
-    catch { data.projects = []; }
-  }
+  // Os dados salvos no servidor podem ser anteriores a campos novos (projetos, Instagram, qualidades):
+  // completa só o que falta com o data.json, sem trocar nada que já foi editado.
+  try {
+    const base = await (await fetch("/data.json")).json();
+    for (const k of Object.keys(base)) if (data[k] === undefined) data[k] = base[k];
+    for (const k of Object.keys(base.profile || {})) if (data.profile[k] === undefined) data.profile[k] = base.profile[k];
+  } catch {}
+  for (const k of ["experiences", "education", "skills", "projects", "certificates", "posts"]) if (!Array.isArray(data[k])) data[k] = [];
 }
 
 async function save(msg = "Salvo") {
@@ -90,115 +97,150 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2600);
 }
 
-const avatar = (cls = "av") =>
-  data.profile.photo
-    ? `<img class="${cls}" src="${esc(data.profile.photo)}" alt="Foto de ${esc(data.profile.name)}">`
-    : `<div class="${cls} initials">${esc((data.profile.name || "?").trim()[0] || "?")}</div>`;
-
 const range = (a, b) => [a, b].filter(Boolean).join(" – ");
+const host = u => String(u || "").replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
+const lines = s => String(s || "").split("\n").map(l => l.trim()).filter(Boolean);
+const initials = () => (data.profile.name || "?").trim()[0] || "?";
+const avatar = (cls = "mini") => `<div class="${cls} initials">${esc(initials())}</div>`;
 
-function renderHero() {
-  const p = data.profile;
-  const details = [p.email && `✉️ <a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`, ...String(p.details || "").split("\n").filter(l => l.trim()).map(esc)]
-    .filter(Boolean).map(l => `<div>${l}</div>`).join("");
-  $("#hero").innerHTML = `
-    ${avatar()}
-    <div class="hero-main">
-      <h1>${esc(p.name)}</h1>
-      <p class="sub">${esc([p.title, p.city].filter(Boolean).join(" · "))}</p>
-      ${details ? `<div class="details">${details}</div>` : ""}
-      <div class="links">
-        ${p.linkedin ? `<a class="lk li" href="${esc(safeUrl(p.linkedin))}" target="_blank" rel="noopener">${ICON.linkedin}LinkedIn</a>` : ""}
-        ${p.github ? `<a class="lk gh" href="${esc(safeUrl(p.github))}" target="_blank" rel="noopener">${ICON.github}GitHub</a>` : ""}
-        <button class="lk cv" data-act="pdf">📄 Baixar currículo</button>
-      </div>
-    </div>
-    ${admin ? `<button class="soft edit-profile" data-act="edit-profile">✏️ Editar perfil</button>` : ""}`;
-  const first = (p.name || "").split(" ").slice(0, 2).join(" ");
-  $("#barName").textContent = first || "Currículo";
-  document.title = `${first || "Currículo"} · Currículo`;
-  $("#compAvatar").src = p.photo || "";
+// "123,5h" → 123.5
+const hoursOf = h => parseFloat(String(h || "").replace(",", ".")) || 0;
+const fmtHours = n => String(Math.round(n * 10) / 10).replace(".", ",");
+
+// Separa as competências em grupos para o recrutador achar rápido.
+const SKILL_GROUPS = [
+  ["Desenvolvimento", /html|css|javascript|typescript|node|react|vue|angular|git|python|java\b|php|api|docker|linux|devops|netlify|vercel/i],
+  ["Dados", /sql|mysql|postgres|banco|dados|excel|power ?bi|mongo/i],
+];
+function groupSkills() {
+  const groups = SKILL_GROUPS.map(([name]) => ({ name, items: [] }));
+  const other = { name: "Profissional", items: [] };
+  data.skills.forEach((s, i) => {
+    const g = SKILL_GROUPS.findIndex(([, re]) => re.test(s));
+    (g >= 0 ? groups[g] : other).items.push({ s, i });
+  });
+  return [...groups, other].filter(g => g.items.length);
 }
 
-function section(title, kind, body, isEmpty) {
-  if (isEmpty && !admin) return "";
-  return `<div>
-    <div class="sech"><span>${title}</span>${admin ? `<button data-act="add-${kind}">+ Adicionar</button>` : ""}</div>
-    ${body}
+const linksOf = p => [
+  p.linkedin && { key: "linkedin", label: "LinkedIn", url: safeUrl(p.linkedin) },
+  p.github && { key: "github", label: "GitHub", url: safeUrl(p.github) },
+  p.instagram && { key: "instagram", label: "Instagram", url: safeUrl(p.instagram) },
+  p.email && { key: "mail", label: "E-mail", url: "mailto:" + p.email },
+].filter(Boolean);
+
+const extAttrs = url => (/^mailto:/.test(url) ? "" : ' target="_blank" rel="noopener"');
+
+// Seções da página, na ordem do menu. "show" decide se aparece para o visitante.
+const SECTIONS = [
+  { id: "sobre", label: "Sobre" },
+  { id: "projetos", label: "Projetos", show: () => data.projects.length },
+  { id: "novidades", label: "Novidades", show: () => data.posts.length },
+  { id: "skills", label: "Skills", show: () => data.skills.length },
+  { id: "formacao", label: "Formação", show: () => data.education.length },
+  { id: "certificados", label: "Certificados", show: () => data.certificates.length },
+  { id: "experiencia", label: "Experiência", show: () => data.experiences.length },
+];
+const visible = s => admin || !s.show || s.show();
+
+function renderSide() {
+  const p = data.profile;
+  const det = lines(p.details);
+  const avail = det.find(l => /dispon/i.test(l));
+  const facts = [p.city && ["pin", p.city], ...det.filter(l => l !== avail).map(l => ["dot", l])].filter(Boolean);
+  const links = linksOf(p);
+  $("#side").innerHTML = `
+    <h1 class="name">${esc(p.name)}</h1>
+    ${p.title ? `<p class="role">${esc(p.title)}</p>` : ""}
+    ${avail ? `<p class="avail"><i></i>${esc(avail)}</p>` : ""}
+    ${facts.length ? `<ul class="facts">${facts.map(([ic, t]) => `<li>${ICON[ic]}<span>${esc(t)}</span></li>`).join("")}</ul>` : ""}
+    <nav class="nav" aria-label="Seções">${SECTIONS.filter(visible).map(s => `<a href="#${s.id}">${s.label}</a>`).join("")}</nav>
+    <div class="side-foot">
+      ${admin ? `<button class="soft on-dark" data-act="edit-profile">Editar perfil</button>` : ""}
+      <button class="cv-btn" data-act="pdf">${ICON.download}Baixar currículo em PDF</button>
+      ${links.length ? `<div class="socials">${links.map(l => `<a href="${esc(l.url)}"${extAttrs(l.url)} aria-label="${l.label}" title="${l.label}">${ICON[l.key]}</a>`).join("")}</div>` : ""}
+    </div>`;
+  $("#mobileBar").innerHTML = `<button class="cv-btn" data-act="pdf">${ICON.download}Currículo PDF</button>
+    ${links.filter(l => l.key === "linkedin" || l.key === "github").map(l => `<a class="ic" href="${esc(l.url)}"${extAttrs(l.url)} aria-label="${l.label}">${ICON[l.key]}</a>`).join("")}`;
+  const first = (p.name || "").split(" ").slice(0, 2).join(" ");
+  document.title = `${first || "Portfólio"} · ${p.title || "Currículo"}`;
+}
+
+function head(title, kind, extra = "") {
+  return `<div class="sec-head"><h2>${title}</h2>${extra ? `<small>${extra}</small>` : ""}${admin && kind ? `<button class="soft" data-act="add-${kind}">+ Adicionar</button>` : ""}</div>`;
+}
+const empty = msg => `<p class="empty">${msg}</p>`;
+
+function aboutSec() {
+  const p = data.profile;
+  const [lead, ...rest] = String(p.about || "").split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+  const q = lines(p.qualities).map(l => l.split("|").map(s => s.trim()));
+  return `<section id="sobre">
+    ${admin ? `<div class="sec-head"><h2>Sobre</h2><button class="soft" data-act="edit-profile">Editar</button></div>` : ""}
+    ${lead ? `<p class="lead">${esc(lead)}</p>` : admin ? empty("Escreva um resumo em Editar perfil.") : ""}
+    ${rest.map(t => `<p class="lead-more">${esc(t)}</p>`).join("")}
+    ${q.length ? `<div class="qualities">${q.map(([t, d]) => `<div><h3>${esc(t)}</h3>${d ? `<p>${esc(d)}</p>` : ""}</div>`).join("")}</div>` : ""}
+  </section>`;
+}
+
+function projLinks(x, cls = "links") {
+  const demo = safeUrl(x.demo), repo = safeUrl(x.repo);
+  if (!demo && !repo && !admin) return "";
+  return `<div class="${cls}">
+    ${demo ? `<a href="${esc(demo)}" target="_blank" rel="noopener">Abrir site</a>` : ""}
+    ${repo ? `<a href="${esc(repo)}" target="_blank" rel="noopener">Ver código</a>` : ""}
+    ${admin ? `<button class="soft" data-act="proj" data-id="${esc(x.id)}">Editar projeto</button>` : ""}
   </div>`;
 }
+const stackOf = x => String(x.stack || "").split(",").map(s => s.trim()).filter(Boolean);
+const tags = xs => (xs.length ? `<ul class="tag-row">${xs.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : "");
+const status = x => (x.status ? `<p class="state${/conclu|no ar|publicad/i.test(x.status) ? " done" : ""}"><i></i>${esc(x.status)}</p>` : "");
+const highlights = x => { const hl = lines(x.highlights); return hl.length ? `<ul class="hl">${hl.map(h => `<li>${esc(h)}</li>`).join("")}</ul>` : ""; };
 
-function expList() {
-  const xs = data.experiences;
-  const body = xs.length
-    ? xs.map((x, i) => `<button class="it" data-act="exp" data-id="${esc(x.id)}">
-        <div class="ic" style="background:${COLORS[i % COLORS.length]}">${EXP_ICONS[i % EXP_ICONS.length]}</div>
-        <div><b>${esc(x.role)}</b><small>${esc([x.company, range(x.start, x.end)].filter(Boolean).join(" · "))}</small></div>
-        <span class="ch">›</span></button>`).join("")
-    : `<div class="empty">Nenhuma experiência ainda.</div>`;
-  return section("Experiência", "exp", `<div class="card list">${body}</div>`, !xs.length);
-}
-
-function eduList() {
-  const xs = data.education;
-  const body = xs.length
-    ? xs.map((x, i) => `<button class="it" data-act="edu" data-id="${esc(x.id)}">
-        <div class="ic" style="background:${["#c53030", "#dd6b20", "#2b6cb0", "#2f855a"][i % 4]}">🎓</div>
-        <div><b>${esc(x.course)}</b><small>${esc([x.institution, x.degree, range(x.start, x.end)].filter(Boolean).join(" · "))}</small>${!x.end && x.note ? `<small class="note">${esc(x.note)}</small>` : ""}</div>
-        ${admin ? `<span class="ch">›</span>` : ""}</button>`).join("")
-    : `<div class="empty">Nenhuma formação ainda.</div>`;
-  return section("Formação", "edu", `<div class="card list">${body}</div>`, !xs.length);
-}
-
-function skillList() {
-  const xs = data.skills;
-  const body = xs.length
-    ? xs.map((s, i) => `<span class="chip">${esc(s)}${admin ? `<button data-act="del-skill" data-i="${i}" title="Remover">×</button>` : ""}</span>`).join("")
-    : `<span class="empty" style="padding:0">Nenhuma competência ainda.</span>`;
-  return section("Competências", "skill", `<div class="card chips">${body}</div>`, !xs.length);
-}
-
-function projCard(x) {
-  const hl = String(x.highlights || "").split("\n").map(s => s.trim()).filter(Boolean);
-  const stack = String(x.stack || "").split(",").map(s => s.trim()).filter(Boolean);
-  const demo = safeUrl(x.demo), repo = safeUrl(x.repo);
-  return `<article class="card proj">
-    ${x.image?.url ? `<a class="proj-shot" href="${esc(x.image.url)}" target="_blank" rel="noopener"><img src="${esc(x.image.url)}" alt="Tela do ${esc(x.name)}" loading="lazy"></a>` : ""}
-    <div class="proj-body">
-      <div class="proj-head"><b>${esc(x.name)}</b>${x.status ? `<span class="badge">${esc(x.status)}</span>` : ""}</div>
-      ${x.summary ? `<p class="proj-sum">${esc(x.summary)}</p>` : ""}
-      ${hl.length ? `<ul class="proj-hl">${hl.map(h => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}
-      ${stack.length ? `<div class="proj-stack">${stack.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>` : ""}
-      ${demo || repo || admin ? `<div class="links">
-        ${demo ? `<a class="lk demo" href="${esc(demo)}" target="_blank" rel="noopener">🔗 Ver projeto</a>` : ""}
-        ${repo ? `<a class="lk gh" href="${esc(repo)}" target="_blank" rel="noopener">${ICON.github}Código no GitHub</a>` : ""}
-        ${admin ? `<button class="soft" data-act="proj" data-id="${esc(x.id)}">✏️ Editar projeto</button>` : ""}
-      </div>` : ""}
+function featureCard(x) {
+  const demo = safeUrl(x.demo);
+  const shot = x.image?.url
+    ? `<img src="${esc(x.image.url)}" alt="Tela do ${esc(x.name)}" loading="lazy">`
+    : `<div class="shot-ph"><b>${esc(x.name)}</b>${demo ? `<span>${esc(host(demo))}</span>` : ""}</div>`;
+  return `<article class="feature">
+    <div class="browser">
+      <div class="bar"><i></i><i></i><i></i>${demo ? `<span>${esc(host(demo))}</span>` : ""}</div>
+      ${demo ? `<a href="${esc(demo)}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">${shot}</a>` : shot}
+    </div>
+    <div>
+      <h3>${esc(x.name)}</h3>
+      ${x.summary ? `<p>${esc(x.summary)}</p>` : ""}
+      ${highlights(x)}
+      ${tags(stackOf(x))}
+      ${status(x)}
+      ${projLinks(x)}
     </div>
   </article>`;
 }
 
-function projList() {
-  const xs = data.projects || [];
-  const body = xs.length ? `<div class="stack">${xs.map(projCard).join("")}</div>` : `<div class="card empty">Nenhum projeto ainda.</div>`;
-  return section("Projetos", "proj", body, !xs.length);
+function projCard(x) {
+  return `<article class="proj">
+    ${x.image?.url ? `<a class="proj-shot" href="${esc(x.image.url)}" target="_blank" rel="noopener"><img src="${esc(x.image.url)}" alt="Tela do ${esc(x.name)}" loading="lazy"></a>` : ""}
+    <h3>${esc(x.name)}</h3>
+    ${x.summary ? `<p>${esc(x.summary)}</p>` : ""}
+    ${highlights(x)}
+    ${tags(stackOf(x))}
+    ${status(x)}
+    ${projLinks(x)}
+  </article>`;
 }
 
-// Aba Experiências: cada experiência aberta, com a descrição à mostra.
-function expTimeline() {
-  const xs = data.experiences;
-  const body = xs.length
-    ? `<div class="stack">${xs.map((x, i) => `<article class="card exp">
-        <div class="ic" style="background:${COLORS[i % COLORS.length]}">${EXP_ICONS[i % EXP_ICONS.length]}</div>
-        <div class="exp-main">
-          <b>${esc(x.role)}</b>
-          <small>${esc([x.company, range(x.start, x.end)].filter(Boolean).join(" · "))}</small>
-          ${x.description ? `<p>${esc(x.description)}</p>` : ""}
-        </div>
-        ${admin ? `<button class="soft" data-act="exp" data-id="${esc(x.id)}">Editar</button>` : ""}
-      </article>`).join("")}</div>`
-    : `<div class="card empty">Nenhuma experiência ainda.</div>`;
-  return `<div style="max-width:760px">${section("Experiência profissional", "exp", body, false)}</div>`;
+function projSec() {
+  const xs = data.projects;
+  const n = xs.length;
+  // O projeto que está no ar vem em destaque.
+  const order = [...xs].sort((a, b) => !!safeUrl(b.demo) - !!safeUrl(a.demo));
+  const [top, ...rest] = order;
+  return `<section id="projetos">
+    ${head("Projetos", "proj", n ? `${n} projeto${n > 1 ? "s" : ""}` : "")}
+    ${top ? featureCard(top) : empty("Nenhum projeto ainda.")}
+    ${rest.length ? `<div class="proj-list">${rest.map(projCard).join("")}</div>` : ""}
+  </section>`;
 }
 
 function fileCard(f) {
@@ -206,7 +248,7 @@ function fileCard(f) {
   const kb = f.size ? (f.size > 1048576 ? (f.size / 1048576).toFixed(1) + " MB" : Math.round(f.size / 1024) + " KB") : "";
   return `<a class="file" href="${esc(f.url)}" target="_blank" rel="noopener" download="${esc(f.name)}">
     <div class="ext ${ext.toLowerCase() === "pdf" ? "pdf" : ""}">${esc(ext)}</div>
-    <div><b>${esc(f.name)}</b><small>${[kb, "Toque para baixar"].filter(Boolean).join(" · ")}</small></div></a>`;
+    <div><b>${esc(f.name)}</b><small>${[kb, "Baixar"].filter(Boolean).join(" · ")}</small></div></a>`;
 }
 
 const clean = html => (window.DOMPurify ? DOMPurify.sanitize(html, {
@@ -224,59 +266,157 @@ function when(iso) {
 }
 
 function postList() {
-  if (!data.posts.length) return `<div class="card empty">${admin ? "Escreva seu primeiro post na caixa lá em cima." : "Nenhuma publicação ainda."}</div>`;
+  if (!data.posts.length) return admin ? empty("Escreva sua primeira novidade na caixa acima.") : "";
   return data.posts.map(p => {
     const imgs = p.images || [], files = p.files || [];
-    return `<article class="card post" id="post-${esc(p.id)}">
-      <div class="fh">${avatar("mini")}<div><b>${esc(data.profile.name.split(" ").slice(0, 2).join(" "))}</b><small>${when(p.date)}${p.edited ? " · editado" : ""}</small></div></div>
+    return `<article class="post" id="post-${esc(p.id)}">
+      <div class="fh">${avatar()}<div><b>${esc(data.profile.name.split(" ").slice(0, 2).join(" "))}</b><small>${when(p.date)}${p.edited ? " · editado" : ""}</small></div></div>
       ${p.html ? `<div class="rich">${clean(p.html)}</div>` : ""}
       ${imgs.length ? `<div class="imgs n${Math.min(imgs.length, 4)}">${imgs.slice(0, 4).map(im => `<a href="${esc(im.url)}" target="_blank" rel="noopener"><img src="${esc(im.url)}" alt="${esc(im.name)}" loading="lazy"></a>`).join("")}</div>` : ""}
       ${files.map(fileCard).join("")}
       <div class="acts">
-        <button data-act="share" data-id="${esc(p.id)}">🔗 Compartilhar</button>
-        ${admin ? `<button data-act="edit-post" data-id="${esc(p.id)}">✏️ Editar</button><button data-act="del-post" data-id="${esc(p.id)}">🗑 Excluir</button>` : ""}
+        <button data-act="share" data-id="${esc(p.id)}">Compartilhar</button>
+        ${admin ? `<button data-act="edit-post" data-id="${esc(p.id)}">Editar</button><button data-act="del-post" data-id="${esc(p.id)}">Excluir</button>` : ""}
       </div>
     </article>`;
   }).join("");
 }
 
-function certGrid() {
-  const cards = data.certificates.map((c, i) => `<button class="cert g${i % 6}" data-act="cert" data-id="${esc(c.id)}">
-      <small>${esc([c.issuer, c.hours].filter(Boolean).join(" · "))}</small>
-      <b>${esc(c.name)}</b>
-      <em>${c.file ? "📄 Ver certificado" : esc(c.date || "")}</em></button>`).join("");
-  const add = admin ? `<button class="cert add" data-act="add-cert">+ Adicionar certificado</button>` : "";
-  if (!cards && !add) return `<div class="card empty">Nenhum certificado ainda.</div>`;
-  return `<div class="certs">${add}${cards}</div>`;
+function postSec() {
+  return `<section id="novidades">${head("Novidades")}<div id="composerSlot"></div><div class="posts">${postList()}</div></section>`;
 }
 
-function contactList() {
+function skillSec() {
+  const gs = groupSkills();
+  const body = gs.length
+    ? `<div class="skills">${gs.map(g => `<div><h3>${g.name}</h3><ul>${g.items.map(({ s, i }) => `<li>${esc(s)}${admin ? `<button data-act="del-skill" data-i="${i}" title="Remover" aria-label="Remover ${esc(s)}">×</button>` : ""}</li>`).join("")}</ul></div>`).join("")}</div>`
+    : empty("Nenhuma competência ainda.");
+  return `<section id="skills">${head("Skills", "skill")}${body}</section>`;
+}
+
+function eduSec() {
+  const xs = data.education;
+  const now = x => !x.end || /cursando/i.test(x.end);
+  const whenTxt = x => (/cursando/i.test(x.end) || !x.end) && x.start ? `Desde ${x.start} · cursando` : x.end && !/cursando/i.test(x.end) ? `Concluído em ${x.end}` : range(x.start, x.end);
+  const body = xs.length
+    ? `<ol class="timeline">${xs.map(x => `<li class="${now(x) ? "now" : ""}">
+        <${admin ? `button class="tl-item" data-act="edu" data-id="${esc(x.id)}"` : "div"}>
+          ${whenTxt(x) ? `<div class="when">${esc(whenTxt(x))}</div>` : ""}
+          <h3>${esc(x.course)}</h3>
+          <p>${esc([x.institution, x.degree].filter(Boolean).join(", "))}</p>
+          ${!x.end && x.note ? `<p class="note">${esc(x.note)}</p>` : ""}
+        </${admin ? "button" : "div"}></li>`).join("")}</ol>`
+    : empty("Nenhuma formação ainda.");
+  return `<section id="formacao">${head("Formação", "edu")}${body}</section>`;
+}
+
+function certSec() {
+  const xs = data.certificates;
+  const total = xs.reduce((s, c) => s + hoursOf(c.hours), 0);
+  const max = Math.max(1, ...xs.map(c => hoursOf(c.hours)));
+  const body = xs.length
+    ? `<div class="certs">${xs.map(c => {
+        const h = hoursOf(c.hours);
+        const tag = admin || c.file ? "button" : "div";
+        return `<${tag} class="cert" data-act="cert" data-id="${esc(c.id)}">
+          <b>${esc(c.name)}</b>
+          ${h ? `<span class="h">${fmtHours(h)}<small>h</small></span>` : "<span></span>"}
+          <span class="by">${esc([c.issuer, c.date].filter(Boolean).join(", "))}${c.file ? ` <em>Ver certificado</em>` : ""}</span>
+          <span class="level" aria-hidden="true"><i style="width:${Math.max(3, (h / max) * 100)}%"></i></span>
+        </${tag}>`;
+      }).join("")}</div>`
+    : empty("Nenhum certificado ainda.");
+  const extra = xs.length ? `${xs.length} cursos${total ? `, ${fmtHours(total)} horas` : ""}` : "";
+  return `<section id="certificados">${head("Certificados", "cert", extra)}${body}</section>`;
+}
+
+function expSec() {
+  const xs = data.experiences;
+  const body = xs.length
+    ? `<div class="jobs">${xs.map(x => `<article class="job">
+        <div class="when">${esc(range(x.start, x.end) || "")}</div>
+        <div>
+          <h3>${esc(x.role)}</h3>
+          ${x.company ? `<p class="co">${esc(x.company)}</p>` : ""}
+          ${x.description ? `<p>${esc(x.description)}</p>` : ""}
+          ${admin ? `<button class="soft" data-act="exp" data-id="${esc(x.id)}">Editar</button>` : ""}
+        </div>
+      </article>`).join("")}</div>`
+    : empty("Nenhuma experiência ainda.");
+  return `<section id="experiencia">${head("Experiência", "exp")}${body}</section>`;
+}
+
+function contactSec() {
   const p = data.profile;
-  const rows = [
-    p.email && `<a class="it" href="mailto:${esc(p.email)}"><div class="ic" style="background:#2b6cb0">✉️</div><div><b>E-mail</b><small>${esc(p.email)}</small></div><span class="ch">›</span></a>`,
-    p.linkedin && `<a class="it" href="${esc(safeUrl(p.linkedin))}" target="_blank" rel="noopener"><div class="ic" style="background:#0a66c2">${ICON.linkedin}</div><div><b>LinkedIn</b><small>${esc(p.linkedin.replace(/^https?:\/\/(www\.)?/, ""))}</small></div><span class="ch">›</span></a>`,
-    p.github && `<a class="it" href="${esc(safeUrl(p.github))}" target="_blank" rel="noopener"><div class="ic" style="background:#24292f">${ICON.github}</div><div><b>GitHub</b><small>${esc(p.github.replace(/^https?:\/\/(www\.)?/, ""))}</small></div><span class="ch">›</span></a>`,
-    `<button class="it" data-act="pdf"><div class="ic" style="background:#2f855a">📄</div><div><b>Baixar currículo</b><small>PDF sempre atualizado</small></div><span class="ch">›</span></button>`,
-  ].filter(Boolean).join("");
-  return `<div style="max-width:560px"><div class="sech"><span>Contato</span></div><div class="card list">${rows}</div></div>`;
+  const ch = linksOf(p).filter(l => l.key !== "instagram").map(l => l.label);
+  return `<section class="contact" id="contato">
+    <div><h2>Vamos conversar?</h2>${ch.length ? `<p>${esc(ch.join(", ").replace(/, ([^,]*)$/, " ou $1"))}, como preferir.</p>` : ""}</div>
+    <button class="cv-btn" data-act="pdf">${ICON.download}Baixar currículo em PDF</button>
+  </section>`;
 }
 
+let spy = null;
 function renderView() {
-  const v = $("#view");
-  if (tab === "feed") v.innerHTML = `<div class="cols"><div class="stack">${projList()}<div>${postList()}</div></div><div class="stack">${eduList()}${skillList()}</div></div>`;
-  if (tab === "cv") v.innerHTML = `<div class="cols"><div class="stack">${data.profile.about || admin ? `<div><div class="sech"><span>Sobre</span>${admin ? `<button data-act="edit-profile">Editar</button>` : ""}</div><div class="card about">${esc(data.profile.about || "Escreva um resumo em Editar perfil.")}</div></div>` : ""}${expList()}</div><div class="stack">${eduList()}${skillList()}</div></div>`;
-  if (tab === "certs") v.innerHTML = certGrid();
-  if (tab === "exp") v.innerHTML = expTimeline();
-  if (tab === "contact") v.innerHTML = contactList();
-  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  const parts = { sobre: aboutSec, projetos: projSec, novidades: postSec, skills: skillSec, formacao: eduSec, certificados: certSec, experiencia: expSec };
+  $("#view").innerHTML = SECTIONS.filter(visible).map(s => parts[s.id]()).join("") + contactSec();
+  const slot = $("#composerSlot");
+  if (slot) slot.appendChild(composerEl);
+  // Destaca no menu a seção que está na tela.
+  spy?.disconnect();
+  const navLinks = [...document.querySelectorAll(".nav a")];
+  spy = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) navLinks.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
+  }), { rootMargin: "-35% 0px -60% 0px" });
+  document.querySelectorAll("#view section[id]").forEach(s => spy.observe(s));
 }
 
 function render() {
-  renderHero();
-  $("#composer").hidden = !admin;
+  renderSide();
+  composerEl.hidden = !admin;
   $("#adminPill").hidden = !admin;
+  document.body.classList.toggle("is-admin", admin);
   renderView();
+  rain.resize();
 }
+
+// ---------- Chuva fina na coluna lateral ----------
+// As gotas caem devagar e, ao tocar a "superfície", abrem pequenas ondas. Sem animação para quem pede menos movimento.
+const rain = (() => {
+  const c = $("#rain"), g = c.getContext("2d");
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let w = 0, h = 0, drops = [], rings = [], running = false;
+  const drop = init => ({ x: Math.random() * w, y: init ? Math.random() * h : -20 - Math.random() * h * 0.5, l: 10 + Math.random() * 18, v: 2.2 + Math.random() * 2.6, a: 0.08 + Math.random() * 0.14, floor: h * (0.55 + Math.random() * 0.45) });
+  function resize() {
+    const dpr = devicePixelRatio || 1;
+    w = c.offsetWidth; h = c.offsetHeight;
+    if (!w || !h) return;
+    c.width = w * dpr; c.height = h * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drops = Array.from({ length: Math.round((w * h) / 9000) }, () => drop(true));
+    rings = Array.from({ length: 6 }, () => ({ x: Math.random() * w, y: h * (0.6 + Math.random() * 0.4), r: Math.random() * 30, a: 0.25 * Math.random() }));
+    if (still) frame(); else if (!running) { running = true; requestAnimationFrame(frame); }
+  }
+  function frame() {
+    g.clearRect(0, 0, w, h);
+    g.lineWidth = 1; g.lineCap = "round";
+    for (const d of drops) {
+      g.strokeStyle = `rgba(185,214,221,${d.a})`;
+      g.beginPath(); g.moveTo(d.x, d.y); g.lineTo(d.x - d.l * 0.08, d.y + d.l); g.stroke();
+      if (still) continue;
+      d.y += d.v; d.x -= d.v * 0.08;
+      if (d.y > d.floor) { if (Math.random() < 0.35) rings.push({ x: d.x, y: d.floor, r: 1, a: 0.32 }); Object.assign(d, drop(false)); }
+    }
+    for (const r of rings) {
+      g.strokeStyle = `rgba(185,214,221,${r.a})`;
+      g.beginPath(); g.ellipse(r.x, r.y, r.r, r.r * 0.32, 0, 0, Math.PI * 2); g.stroke();
+      if (r.r > 8) { g.strokeStyle = `rgba(185,214,221,${r.a * 0.6})`; g.beginPath(); g.ellipse(r.x, r.y, r.r * 0.55, r.r * 0.18, 0, 0, Math.PI * 2); g.stroke(); }
+      if (!still) { r.r += 0.45; r.a -= 0.004; }
+    }
+    rings = rings.filter(r => r.a > 0);
+    if (!still) requestAnimationFrame(frame);
+  }
+  addEventListener("resize", () => { clearTimeout(resize.t); resize.t = setTimeout(resize, 150); });
+  return { resize };
+})();
 
 // ---------- Folhas (janelas) de edição ----------
 function sheet(title, bodyHTML, { onSave, saveLabel = "Salvar", cancelLabel = "Cancelar" } = {}) {
@@ -452,36 +592,32 @@ function listEditor(listKey, fields, title, id) {
 
 function editProfile() {
   const p = data.profile;
-  let photoFile = null;
-  const bg = sheet("Editar perfil", `
-    <div class="photo-pick">${avatar()}<label class="soft">Trocar foto<input type="file" accept="image/*" hidden data-photo></label></div>
+  sheet("Editar perfil", `
     <div class="group">
       ${field({ key: "name", label: "Nome" }, p.name)}
-      ${field({ key: "title", label: "Profissão / título", ph: "Ex.: Desenvolvedor Web Júnior" }, p.title)}
+      ${field({ key: "title", label: "Cargo que aparece abaixo do nome", ph: "Ex.: Desenvolvedor júnior, com base em web e banco de dados" }, p.title)}
       ${field({ key: "city", label: "Cidade", ph: "Ex.: Brasília, DF" }, p.city)}
       ${field({ key: "email", label: "E-mail", type: "email" }, p.email)}
     </div>
-    <p class="hint">Informações abaixo do nome (uma por linha):</p>
-    <div class="group" style="margin-top:6px">${field({ key: "details", label: "Dados pessoais", type: "textarea", ph: "Ex.: Disponível para início imediato" }, p.details)}</div>
-    <div class="group" style="margin-top:18px">${field({ key: "about", label: "Sobre mim", type: "textarea" }, p.about)}</div>
+    <p class="hint">Informações abaixo do nome (uma por linha). A linha com "Disponível" vira o selo verde.</p>
+    <div class="group" style="margin-top:6px">${field({ key: "details", label: "Dados rápidos", type: "textarea", ph: "Ex.: Disponível para início imediato" }, p.details)}</div>
+    <div class="group" style="margin-top:18px">${field({ key: "about", label: "Sobre mim (o 1º parágrafo fica em destaque)", type: "textarea" }, p.about)}</div>
+    <p class="hint">Qualidades em destaque: uma por linha, no formato Título | explicação.</p>
+    <div class="group" style="margin-top:6px">${field({ key: "qualities", label: "Qualidades", type: "textarea", ph: "Ex.: Visão de negócio | Rotina real de faturamento e caixa" }, p.qualities)}</div>
     <div class="group" style="margin-top:18px">
       ${field({ key: "linkedin", label: "Link do LinkedIn", type: "url" }, p.linkedin)}
       ${field({ key: "github", label: "Link do GitHub", type: "url" }, p.github)}
+      ${field({ key: "instagram", label: "Link do Instagram", type: "url" }, p.instagram)}
     </div>`,
     {
       onSave: async bg => {
         const out = { ...p };
-        for (const k of ["name", "title", "city", "email", "details", "about", "linkedin", "github"]) out[k] = bg.querySelector(`[name="${k}"]`).value.trim();
+        for (const k of ["name", "title", "city", "email", "details", "about", "qualities", "linkedin", "github", "instagram"]) out[k] = bg.querySelector(`[name="${k}"]`).value.trim();
         if (!out.name) { toast("Preencha o nome."); return false; }
-        if (photoFile) out.photo = (await upload(photoFile, { square: true })).url;
         data.profile = out;
         await save("Perfil atualizado");
       },
     });
-  $("[data-photo]", bg).onchange = e => {
-    photoFile = e.target.files[0];
-    if (photoFile) $(".photo-pick .av", bg).outerHTML = `<img class="av" src="${URL.createObjectURL(photoFile)}" alt="">`;
-  };
 }
 
 function addSkill() {
@@ -579,7 +715,6 @@ $("#publish").onclick = async () => {
     if (old) Object.assign(old, post, { edited: true });
     else data.posts.unshift({ id: uid(), date: new Date().toISOString(), ...post });
     resetComposer();
-    tab = "feed";
     await save(old ? "Post atualizado" : "Publicado");
   } catch (e) {
     toast(e.message);
@@ -595,7 +730,7 @@ function editPost(id) {
   attachments = [...(p.images || []), ...(p.files || [])].map(x => ({ ...x }));
   renderAtt();
   $("#publish").textContent = "Salvar alterações"; $("#cancelEdit").hidden = false;
-  $("#composer").scrollIntoView({ behavior: "smooth", block: "center" });
+  composerEl.scrollIntoView({ behavior: "smooth", block: "center" });
   editor.focus();
 }
 
@@ -609,11 +744,6 @@ function loadScript(src) {
   });
 }
 
-async function toDataURL(url) {
-  const b = await (await fetch(url)).blob();
-  return new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(b); });
-}
-
 async function pdf() {
   toast("Gerando PDF…");
   await loadScript("/vendor/jspdf.umd.min.js");
@@ -621,7 +751,7 @@ async function pdf() {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const p = data.profile;
   const M = 18, W = 210 - 2 * M, BOTTOM = 297 - 16;
-  const NAVY = [15, 27, 45], GRAY = [90, 100, 115], TXT = [35, 40, 48];
+  const NAVY = [18, 49, 59], GRAY = [74, 98, 106], TXT = [30, 40, 45], LINK = [47, 111, 126];
   let y = M;
   // As fontes padrão do PDF não têm emojis: troca alguns símbolos e remove o resto.
   const txt = s => String(s || "").replace(/[–—]/g, "-").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/•/g, "-")
@@ -639,24 +769,14 @@ async function pdf() {
   const heading = t => {
     need(16); y += 4;
     write(t.toUpperCase(), { size: 11, style: "bold", color: NAVY, after: 0 });
-    doc.setDrawColor(91, 157, 255); doc.setLineWidth(0.5); doc.line(M, y, M + W, y); y += 4;
+    doc.setDrawColor(143, 179, 188); doc.setLineWidth(0.5); doc.line(M, y, M + W, y); y += 4;
   };
 
-  // Cabeçalho
-  let x = M, hw = W;
-  if (p.photo) {
-    try {
-      const img = await toDataURL(p.photo);
-      doc.addImage(img, img.includes("image/png") ? "PNG" : "JPEG", M, y, 28, 28);
-      x = M + 34; hw = W - 34;
-    } catch {}
-  }
-  const top = y;
-  write(p.name, { size: 20, style: "bold", color: NAVY, x, w: hw, after: 0.5 });
-  write([p.title, p.city].filter(Boolean).join("  |  "), { size: 11, color: GRAY, x, w: hw, after: 1 });
-  write([p.email, ...(p.details || "").split("\n")].filter(l => txt(l)).join("\n"), { size: 9.5, x, w: hw, after: 0.5 });
-  write([p.linkedin && "LinkedIn: " + p.linkedin.replace(/^https?:\/\/(www\.)?/, ""), p.github && "GitHub: " + p.github.replace(/^https?:\/\/(www\.)?/, "")].filter(Boolean).join("   "), { size: 9.5, color: [10, 102, 194], x, w: hw });
-  if (x !== M) y = Math.max(y, top + 30);
+  // Cabeçalho (sem foto: só o que interessa ao recrutador)
+  write(p.name, { size: 20, style: "bold", color: NAVY, after: 0.5 });
+  write([p.title, p.city].filter(Boolean).join("  |  "), { size: 11, color: GRAY, after: 1 });
+  write([p.email, ...(p.details || "").split("\n")].filter(l => txt(l)).join("\n"), { size: 9.5, after: 0.5 });
+  write([p.linkedin && "LinkedIn: " + p.linkedin.replace(/^https?:\/\/(www\.)?/, ""), p.github && "GitHub: " + p.github.replace(/^https?:\/\/(www\.)?/, ""), "Portfólio: " + location.host].filter(Boolean).join("   "), { size: 9.5, color: LINK });
 
   if (txt(p.about)) { heading("Resumo profissional"); write(p.about, { after: 2 }); }
 
@@ -668,7 +788,7 @@ async function pdf() {
       if (x.stack) write(x.stack, { size: 9.5, color: GRAY, after: 0.8 });
       write(x.summary, { after: 0.8 });
       for (const h of String(x.highlights || "").split("\n").filter(l => l.trim())) write("- " + h.trim(), { after: 0.3 });
-      write([x.demo && "Projeto: " + x.demo.replace(/^https?:\/\//, ""), x.repo && "Código: " + x.repo.replace(/^https?:\/\//, "")].filter(Boolean).join("   "), { size: 9.5, color: [10, 102, 194], after: 3 });
+      write([x.demo && "Projeto: " + x.demo.replace(/^https?:\/\//, ""), x.repo && "Código: " + x.repo.replace(/^https?:\/\//, "")].filter(Boolean).join("   "), { size: 9.5, color: LINK, after: 3 });
       y += 1;
     }
   }
@@ -703,8 +823,6 @@ async function pdf() {
 
 // ---------- Cliques ----------
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab]");
-  if (t) { tab = t.dataset.tab; renderView(); return; }
   const a = e.target.closest("[data-act]"); if (!a) return;
   const { act, id } = a.dataset;
   if (act === "pdf") return pdf().catch(err => toast(err.message));
@@ -722,7 +840,6 @@ document.addEventListener("click", async e => {
     const c = data.certificates.find(v => v.id === id);
     if (admin) return listEditor("certificates", CERT_FIELDS, "certificado", id);
     if (c.file) window.open(c.file.url, "_blank", "noopener");
-    else showDetail(c.name, [c.issuer, c.hours, c.date].filter(Boolean).join(" · "), "");
     return;
   }
   if (!admin) return;
@@ -766,7 +883,6 @@ function askPassword() {
 
 (async () => {
   await load();
-  if (location.hash.startsWith("#post-")) tab = "feed";
   render();
   if (new URLSearchParams(location.search).has("admin")) {
     let saved = "";
